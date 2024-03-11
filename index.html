@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: sans-serif;
+}
+.card {
+    width: 100%;
+    height: 90vh;
+    /* background: red; */
+    border: 1px solid #e5e5e5;
+    border-radius: 15px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.user {
+    max-width: 40px; 
+    max-height: 40px; 
+    width: 100%; 
+    height: auto; 
+    object-fit: cover; 
+    border-radius: 50%; 
+}
+
+.user-detail {
+    display: flex;
+    align-items: center;
+}
+.user-detail h4 {
+    margin-left: 10px;
+}
+.renderchat {
+    width: 100%;
+    height: calc(100vh - 230px);
+    overflow: scroll;
+    padding-top: 10px;
+}
+.chat-incoming {
+    width: 100%;
+    display: flex;
+    margin-bottom: 10px;
+    /* align-items: center; */
+}
+.chat-incoming span {
+    background: #f1f1f1;
+    padding: 5px 20px;
+    border-radius: 5px;
+    margin-left: 10px;
+    /* max-width: 60%; */
+}
+.chat-outcoming {
+    width: 100%;
+    display: flex;
+    margin-bottom: 10px;
+    justify-content: flex-end;
+    /* align-items: center; */
+}
+.chat-outcoming span {
+    background: #0084FF;
+    color: #fff;
+    padding: 5px 20px;
+    border-radius: 5px;
+    margin-right: 10px;
+    /* max-width: 60%; */
+}
+.sendmsg {
+    height: 70px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+}
+.btn-primary {
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    background: #0084FF;
+    color: #fff;
+    border-radius: 25px;
+    margin-left: 10px;
+}
+/* CSS สำหรับหน้าล็อกอิน */
+.login-form {
+    width: 300px;
+    margin: auto auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.login-form h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.login-form input[type="text"],
+.login-form input[type="password"],
+.login-form button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.login-form button {
+    background-color: #0084FF;
+    color: #fff;
+    cursor: pointer;
+    border: none;
+}
+
+.login-form button:hover {
+    background-color: #0056b3;
+}
+
+.login-form input[type="text"]:focus,
+.login-form input[type="password"]:focus {
+    outline: none;
+    border-color: #0084FF;
+    box-shadow: 0 0 5px rgba(0, 132, 255, 0.5);
+}
+.card {
+    display: none;
+}
+    </style>
+</head>
+<body style="padding: 20px;">
+<!-- ใส่ส่วนของหน้าล็อกอินในบอดี้ -->
+<div id="loginForm" class="login-form">
+    <h2>เข้าสู่ระบบ</h2>
+    <input type="text" id="username" placeholder="ชื่อผู้ใช้"><br>
+    <input type="password" id="password" placeholder="รหัสผ่าน"><br>
+    <button id="loginBtn">เข้าสู่ระบบ</button>
+</div>
+
+    <div class="card" id="card">
+        <div class="user-detail">
+            <img class="user" src="https://digitalmore.co/wp-content/uploads/2023/04/50-Cute-anime-01.jpg" alt="">
+            <h4 id="showUsername">คุณใครเนี่ย ?</h4>
+        </div>
+        <div id="render" class="renderchat">
+        </div>
+        <div class="sendmsg">
+
+            <button id="btnSend" class="btn-primary">ส่ง</button>
+            <input id="txtMsg" class="form-control" placeholder="Message..." type="text">
+        </div>
+    </div>
+
+    <script type="module" defer>
+        // Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-app.js";
+import { getDatabase,set,push,ref,onValue } from "https://www.gstatic.com/firebasejs/9.12.0/firebase-database.js";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+    apiKey: "",
+authDomain: "",
+databaseURL: "",
+projectId: "",
+storageBucket: "",
+messagingSenderId: "",
+appId: "",
+measurementId: ""
+};
+
+
+const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Reference DOM elements
+    const loginForm = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const loginButton = document.getElementById('loginBtn');
+    const chatContainer = document.getElementById('card');
+
+    // Function to handle login
+    function handleLogin() {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (username !== '' && password !== '') {
+            chatContainer.style.display = 'block';
+            loginForm.style.display = 'none';
+
+            // Listen for Enter key press in the message input field
+            txtMsg.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Function to send message
+            function sendMessage() {
+                const txtMsg = document.querySelector('#txtMsg');
+                const user = username; // Assuming the username is the user identifier
+                if (txtMsg.value.trim() !== '') {
+                    set(push(ref(db, 'room1')), {
+                        username: user,
+                        msg: txtMsg.value
+                    });
+                    txtMsg.value = ''; // Clear message input field after sending
+                }
+            }
+        } else {
+            alert('โปรดใส่รหัสผ่าน ');
+        }
+    }
+
+    // Event listener for login button
+    loginButton.addEventListener('click', handleLogin);
+
+    // Listen for changes in Firebase database and update chat messages
+    onValue(ref(db, 'room1'), (snapshot) => {
+        const data = snapshot.val();
+        let html = '';
+        for (const key in data) {
+            if (Object.hasOwnProperty.call(data, key)) {
+                const message = data[key];
+                const sender = message.username || 'Anonymous';
+                const messageContent = message.msg || '';
+                if (sender !== usernameInput.value.trim()) {
+                    html += `<div class="chat-incoming">
+                                <img class="user" src="https://cdn.pixabay.com/photo/2021/11/24/05/19/user-6820232_640.png" alt="">
+                                <span>${sender}: ${messageContent}</span>
+                             </div>`;
+                } else {
+                    html += `<div class="chat-outcoming">
+                                <span>${messageContent}</span>
+                                <img class="user" src="https://digitalmore.co/wp-content/uploads/2023/04/50-Cute-anime-01.jpg" alt="">
+                             </div>`;
+                }
+            }
+        }
+        document.querySelector('#render').innerHTML = html;
+    });
+
+    // Event listener for sending messages when button is clicked
+    btnSend.addEventListener('click', () => {
+        sendMessage();
+    });
+        
+    </script>
+    
+</body>
+</html>
